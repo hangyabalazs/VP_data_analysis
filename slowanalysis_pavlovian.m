@@ -28,7 +28,7 @@ end
 
 % Choose CellBase
 usr = getenv('username');
-if ismember(usr,{'hangya.balazs','hangyab','Hangya Bal·zs'})
+if ismember(usr,{'hangya.balazs','hangyab','Hangya Bal√°zs'})
     choosecb('auditory_pavlovian_cellbase')   % choose CellBase
 else
     choosecb('VP_Cellbase_B')   % choose CellBase

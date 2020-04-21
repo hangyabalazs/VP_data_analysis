@@ -43,6 +43,7 @@ end
 numCells = length(vpcells);
 switch responsespec
     case 'cue'
+        
         % Raster + PSTH aligned to stimulus onset
         alignevent = 'StimulusOn';   % trigger event
         shevent = 'DeliverAllFeedback';  % show-event
@@ -89,7 +90,7 @@ switch responsespec
         
     case 'rew'
         
-        %Raster + PSTH aligned to feedback delivery
+        % Raster + PSTH aligned to feedback delivery
         alignevent = 'DeliverAllFeedback';   % trigger event
         shevent = 'StimulusOn';  % show-event
         partition = '#RewardedTrials';   % partition trials
@@ -117,7 +118,7 @@ switch responsespec
             
             stats2 = rasterPSTH(cellid,alignevent,shevent,partition,wn,dt,sigma,bwin,twin,issave,response_resdir);
             
-            %     Add property to CellBase
+            % Add property to CellBase
             if ~isnan(stats2{1}.Wpi) && ~isnan(stats2{1}.Wpa)
                 if stats2{1}.Wpi < 0.001 && stats2{1}.Wpa > 0.001   % reward
                     st = setvalue(cellid,propname1,-1);   % inhibited
@@ -152,6 +153,7 @@ switch responsespec
             end
         end
     case 'pun'
+        
         % Raster + PSTH aligned to feedback delivery
         alignevent = 'DeliverAllFeedback';   % trigger event
         shevent = 'StimulusOn';  % show-event

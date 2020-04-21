@@ -57,11 +57,13 @@ for k = 1:numPairs
     if sum(strcmp(most_pairs, currentSession)) == 1
         cellid1 = char(Pairs{k}{1});
         cellid2 = char(Pairs{k}{2});
-        tt1=cellid1(15);
-        tt2=cellid2(15);
-        u1=cellid1(17);
-        u2=cellid2(17);
+        tt1 = cellid1(15);
+        tt2 = cellid2(15);
+        u1 = cellid1(17);
+        u2 = cellid2(17);
         fnm = ['CCG_' currentSession '_' tt1 '_' u1 '_' currentSession '_' tt2 '_' u2 '.jpg' ];
-        copyfile ([sourcedir '\' fnm], [resdir '\' fnm]);
+        if exist(fnm)
+            copyfile ([sourcedir '\' fnm], [resdir '\' fnm]);
+        end
     end
 end

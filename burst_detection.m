@@ -26,7 +26,7 @@ else
 end
 
 % Directories
-resdir = fullfile(getpref('cellbase','datapath'),'VP','burst_psth2');   % results directory
+resdir = fullfile(getpref('cellbase','datapath'),'_paper_figs', 'code_review2', 'fig6', 'PSTH_burst_vs_singlespike');   % results directory
 if ~isdir(resdir)
     mkdir(resdir)
 end
@@ -60,7 +60,7 @@ switch spiketype
             saveas(G,fnm)
             set(G,'Renderer','painters');
             saveas(G,fullfile(resdir,[cellidt '_stimuluson_burst.eps']));
-            close(G)
+            close all
         end
         
         for k = 1:numCells
@@ -74,7 +74,7 @@ switch spiketype
             saveas(J,fnm)
             set(J,'Renderer','painters');
             saveas(J,fullfile(resdir,[cellidt '_DeliverAllFeedback_burst.eps']));
-            close(J)
+            close all
         end
         
         % Test activation/inhibition for cue, reward and punishment
@@ -108,7 +108,7 @@ switch spiketype
             saveas(G,fnm)
             set(G,'Renderer','painters');
             saveas(G,fullfile(resdir,[cellidt '_stimuluson_single.eps']));
-            close(G)
+            close all
         end
         
         for k = 1:numCells
@@ -122,7 +122,7 @@ switch spiketype
             saveas(J,fnm)
             set(J,'Renderer','painters');
             saveas(J,fullfile(resdir,[cellidt '_DeliverAllFeedback_single.eps']));
-            close(J)
+            close all
         end
         
         % Test activation/inhibition for cue, reward and punishment

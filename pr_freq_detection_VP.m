@@ -1,7 +1,7 @@
-function [phasic_cells, BetaIndex, GammaIndex] = pr_freq_detection_VP(vpcells, resdir, resdir2, resdir3, acgsource, psthsource)
+function [phasic_cells, BetaIndex, GammaIndex, isbeta, isgamma] = pr_freq_detection_VP(vpcells, resdir, resdir2, resdir3, acgsource, psthsource)
 %PR_FREQ_DETECTION_VP finds rhythmic neurons based  on their autocorrelograms.
 %
-%   [PHASIC_CELLS, BETAINDEX, GAMMAINDEX] = PR_FREQ_DETECTION_VP(RESDIR,
+%   [PHASIC_CELLS, BETAINDEX, GAMMAINDEX, ISBETA, ISGAMMA] = PR_FREQ_DETECTION_VP(RESDIR,
 %   ACGSOURCE, PSTHSOURCE) finds rhythmic neurons within the beta (16-30
 %   Hz) and gamma (30-100Hz) frequency rage based on their autocorrelogram
 %   peaks. Bursting neurons (acg peak with <10 ms lag) and slow rhytmic
@@ -36,7 +36,7 @@ if ~isfolder(resdir3)
 end
 
 % Load ACG matrices - necessary for rhythmicity detection
-load(fullfile(acgsource,'ACG_matrices.mat')); %#ok<*LOAD>
+load(fullfile(acgsource,'ACG_matrices_.mat')); %#ok<*LOAD>
 
 % Select cells
 if isempty(vpcells)
@@ -49,8 +49,9 @@ numCells = length(vpcells);
 
 % Exclude bursting neurons
 res = 0.5;  % ACG resolution
-phasewin = 10;
-ACGh = CCR(:,1001:2000);  % half acg
+phasewin1 = 10;
+phasewin2 = 5;
+ACGh = SCCR(:,1001:2000);  % half acg (smoothed)
 lagsh = lags(1001:2000); % corresponding half of time vector in ms
 for i = 1:length(cellids)  % loop through cells
     cACGh = ACGh(i,:);
@@ -59,42 +60,66 @@ for i = 1:length(cellids)  % loop through cells
     peak_inx(i)= peak_inxx(end);
     lagms(i) = lagsh(peak_inx(i));
 end
-phasic_cells = cellids(10<lagms & lagms<=60); % only choosing beta and gamma cells and eliminate bursting ones (lag>10ms)
+phasic_cells = cellids(10<lagms & lagms<=67); % only choosing beta and gamma cells and eliminate bursting ones (lag>10ms)
+phasic_lagms = lagms(10<lagms & lagms<=67);
 
 % Beta and gamma index calculation
 numPC = length(phasic_cells); % number of phasic cells
 [betainx, gammainx, cellinx] = deal(nan(1,numPC));
-for j = 1:numPC  % loop through non-bursting cells with <60 ms ACG peaks
+[isgamma, isbeta] = deal(zeros(1,numPC));
+for j = 1:numPC  % loop through non-bursting cells with <67 ms ACG peaks
+    
     cellid = phasic_cells{j};
     cellinx(j) = find(strcmp(cellids,cellid)); % getting index from original cellidlist
     pACGh = ACGh(cellinx(j),:);  % acg of the current phasic cell
     
     % Find beta peak
-    b_peak = pACGh(lagsh<=60 & lagsh>=30);
+    b_peak = pACGh(lagsh<=67 & lagsh>=34);
     [b_peak_val, binx] = max(b_peak);
-    flank = phasewin / res;
-    mbp = mean(pACGh(59+binx-flank:59+binx+flank)); % mean beta peak
+    flank = phasewin1 / res;
+    mbp = mean(pACGh(67+binx-flank:67+binx+flank)); % mean beta peak
     
     % Calculate baseline and Beta Index
-    peak_loc = 59+binx;
-    bsl = (pACGh(round(peak_loc/2))+pACGh(peak_loc*2)) / 2;  %baseline
+    peak_loc = 67+binx;
+    bsl = (pACGh(round(peak_loc/2))+pACGh(round(peak_loc*1.5))) / 2;  % baseline
     betainx(j) = (mbp-bsl)/max(mbp,bsl); % beta index
     
     % Find gamma peak
-    g_peak = pACGh(lagsh<=31 & lagsh>=10);
-    g_peak_inx = find(lagsh<=31 & lagsh>=10);
+    g_peak = pACGh(lagsh<=33 & lagsh>=10);
+    g_peak_inx = find(lagsh<=33 & lagsh>=10);
     [g_peak_val, ginx] = max(g_peak);
-    flank = phasewin / res;
-    mgp = mean(pACGh(20+ginx-flank:20+ginx+flank)); % mean gamma peak
+    flank = phasewin2 / res;
+    mgp = mean(pACGh(max(19+ginx-flank,1):19+ginx+flank)); % mean gamma peak
     
     % Calculate baseline and Gamma Index
-    peak_loc2 = 20 + ginx;
-    bsl2 = (pACGh(round(peak_loc2/2))+pACGh(peak_loc2*2)) / 2;
+    peak_loc2 = 19 + ginx;
+    bsl2 = (pACGh(round(peak_loc2/2))+pACGh(round(peak_loc2*1.5))) / 2;
     gammainx(j) = (mgp-bsl2)/max(mgp,bsl2); % gamma index
+    
+%     close all;figure;plot(lagsh,pACGh)
+%     title([num2str(betainx(j)) ' ' num2str(gammainx(j))])
+%     if betainx(j) > 0.4 || gammainx(j) > 0.25
+%         hold on;plot(lagsh,pACGh,'r')
+%     end
+%     1;
 end
 BetaIndex = betainx;
 GammaIndex = gammainx;
 ph_Refractory = Refractory(cellinx);   % refractory period
+
+% Gamma and beta cells
+isbeta(setdiff(find(BetaIndex>0.4), find(GammaIndex>0.25))) = 1;
+isgamma(setdiff(find(GammaIndex>0.25), find(BetaIndex>0.4))) = 1;
+
+% Decide ambiguous cells
+Ambig_cells = intersect(find(BetaIndex>0.4), find(GammaIndex>0.25));
+for k = Ambig_cells
+    if phasic_lagms(k) <= 67 && phasic_lagms(k) >= 34
+        isbeta(k) = 1;
+    elseif phasic_lagms(k) <= 33 && phasic_lagms(k) >= 10
+        isgamma(k) = 1;
+    end
+end
 
 % Copy psth and acg plots of rhythmic cells
 filenames1 = sourcefiles(acgsource); % acg filenames
@@ -123,7 +148,7 @@ fnmm = 'phasic_response.mat'; % save phasic cellids
 save(fullfile(resdir,fnmm),'phasic_cells','BetaIndex','GammaIndex')
 
 % -------------------------------------------------------------------------
-function [filenames]= sourcefiles(sourcedir)
+function filenames = sourcefiles(sourcedir)
 
 files = dir(sourcedir);
 filenames = cell(1,length(files));

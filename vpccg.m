@@ -24,7 +24,7 @@ if ~isfolder(resdir_nontetrode)
 end
 
 % Input argument check
-narginchk(0,2);
+narginchk(0,3);
 if nargin < 2
     issave = true;   % default saving behavior
 end

@@ -153,11 +153,12 @@ for iP = 1:numPairs   % loop through pairs of cells
     
     if length(ncc1) > limit_spikes(1) && length(ncc2) > limit_spikes(1)     % minimum 100 spikes
         [H1 ccr lwr upr rccg] = somccg_conf_filter(ncc1,ncc2,wn,1100);    % 1->2
-        %         close(H1)
-    end
     
     maxval = max(ccr);
     maxinx = find(ccr == maxval);
+    
+    fnm2 = ['CCG_' ncl1 '_' ncl2 '.fig'];
+    fnm3 = ['CCG_' ncl1 '_' ncl2 '.jpg'];
     
     if (maxval-upr(maxinx)) > 10 % a better criterium for excitation may be defined later
         einx = find(ccr>upr); % find the indices, where there were excitation
@@ -173,8 +174,7 @@ for iP = 1:numPairs   % loop through pairs of cells
         else
             width = 0;
         end
-        fnm2 = ['CCG_' ncl1 '_' ncl2 '.fig'];
-        fnm3 = ['CCG_' ncl1 '_' ncl2 '.jpg'];
+        
         switch g.whichcells
             case 'nontetrodepairs' % Examining nontetrodepairs
                 if width < 3 % 'Narrow' excitation
@@ -211,20 +211,21 @@ for iP = 1:numPairs   % loop through pairs of cells
                             saveas(H1,fullfile(resdir4,fnm2));   % save CCG plot
                             saveas(H1,fullfile(resdir4,fnm3));   % save CCG plot
                         end
-                    end 
+                    end
                 elseif width >= 3
                     sync_exc_ttp{inx5} = [{cell1}, cell2];   % broad sync excitation
                     inx5 = inx5 + 1;
                     saveas(H1,fullfile(resdir3,fnm2));   % save CCG plot
                     saveas(H1,fullfile(resdir3,fnm3));   % save CCG plot
-                    close(H1)
                 end
         end
+        close(H1)
     else
         saveas(H1,fullfile(resdir1,fnm2));   % save CCG plot
         saveas(H1,fullfile(resdir1,fnm3));   % save CCG plot
+        close(H1)
     end
-    close all
+    end
 end
 switch g.whichcells
     case 'nontetrodepairs'

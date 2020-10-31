@@ -13,6 +13,7 @@ This work is licensed under a [Creative Commons Attribution-NonCommercial-ShareA
 ## Description
 
 This repository contains MATLAB code for analysing tetrode data collected from mice performing a probabilistic Pavlovian conditioning task.
+The full analysis can be performed by running the main function called slowanalysis_pavlovian.m.
 
 ## Content
 - .m files for data analysis

@@ -43,7 +43,7 @@ for i = 1:NumCells
              delstr(i) = 0;
         end
     elseif strcmp(responsetype, 'rewardresponse')
-        if (sum(E.AllReward==2) == 0) || (sum(E.AllReward==2) < 5) || (sum(E.AllReward==1) < 5)  % if there is no second type of trials
+        if (sum(E.AllReward==2) == 0) || (sum(E.AllReward==2) < 5) || (sum(E.AllReward==1) < 5)  % if there is no second type of trials or low trial numbers
             delstr(i) = 0;
         end
     elseif strcmp(responsetype, 'punishresponse')
@@ -54,6 +54,25 @@ for i = 1:NumCells
 end
 cells = cells(delstr==1);
 
+% Define filterinput
+switch responsetype
+    case 'cueresponse'
+        filters = {'TrialType==1' 'TrialType==2'};
+        event = 'StimulusOn';
+        bwin = [-1 0];   % baseline window
+        twin = [0 0.5];   % test-window
+    case 'rewardresponse'
+        filters = {'AllReward==1' 'AllReward==2'};
+        event = 'DeliverAllFeedback';
+        bwin = [-3 -2];   % baseline window
+        twin = [0 0.2];   % test-window
+    case 'punishresponse'
+        filters = {'Punishment==1' 'Punishment==2'};
+        event = 'DeliverAllFeedback';
+        bwin = [-3 -2];   % baseline window
+        twin = [0 0.2];   % test-window
+end
+
 % Time window
 wn = [-4 4];
 dt = 0.001;
@@ -61,19 +80,18 @@ time = wn(1)*1000:dt*1000:wn(2)*1000;   % time vector
 
 % PSTH
 R2 = runanalysis(@ultimate_psth,...
-    'trial', 'StimulusOn', wn,...
+    'trial', event, wn,...
     'dt',dt,'display',false,'sigma',0.08,'parts','all','isadaptive',2,...
-    'event_filter','custom', 'filterinput','TrialType==2','maxtrialno',Inf,...
-    'baselinewin',[-1 0],'testwin',[0 0.5],'relative_threshold',0.1,'cellids',cells);
+    'event_filter','custom', 'filterinput',filters{2},'maxtrialno',Inf,...
+    'baselinewin',[-1 0],'forcesmoothedstat', true,'testwin',[0 0.5],'relative_threshold',0.1,'cellids',cells);
 R1 = runanalysis(@ultimate_psth,...
-    'trial', 'StimulusOn', wn,...
+    'trial', event, wn,...
     'dt',dt,'display',false,'sigma',0.08,'parts','all','isadaptive',2,...
-    'event_filter','custom', 'filterinput','TrialType==1','maxtrialno',Inf,...
-    'baselinewin',[-1 0],'testwin',[0 0.5],'relative_threshold',0.1,'cellids',cells);
+    'event_filter','custom', 'filterinput',filters{1},'maxtrialno',Inf,...
+    'baselinewin',[-1 0],'forcesmoothedstat', true,'testwin',[0 0.5],'relative_threshold',0.1,'cellids',cells);
 
 % Index for time 0
-bwin = [-3 -2];   % baseline window for MW-test
-twin = [0 0.5];   % test-window for MW-test
+
 st = abs(wn(1)) / dt;   % in ms
 nullindex = st + 1;
 
@@ -109,7 +127,8 @@ end
 
 % Box-whisker plot
 [H, Wp] = boxstat(avg_spikecount1,avg_spikecount2,'T1','T2',0.005,'paired');
-
+    boxplot(avg_spikecount1-avg_spikecount2);
+    I = gcf;
 % Save figure
 if responsespec == 1
     tag = 'excitation';
@@ -118,3 +137,12 @@ elseif responsespec == -1
 end
 filename = fullfile(resdir,['compare_expectation_' responsetype '_' tag '_boxstat.fig']);
 saveas(H,filename);
+set(H,'renderer', 'painters');
+set(I,'renderer', 'painters');
+filename2 = fullfile(resdir,['compare_expectation' responsetype '_' tag '_boxstat.eps']);
+filename2_2 = fullfile(resdir,['compare_expectation' responsetype '_' tag '_boxstat_diff.eps']);
+saveas(H,filename2);
+saveas(I,filename2_2);
+filename3 = fullfile(resdir,['compare_expectation' responsetype '_' tag '_boxstat.jpg']);
+saveas(H,filename3);
+close(H)

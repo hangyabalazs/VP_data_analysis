@@ -1,4 +1,4 @@
-function avg_psth_VP(cellids1,cellids2,responsespec,resdir)
+function avg_psth_VP(cellids1,cellids2,responsespec,resdir,spike)
 %AVG_PSTH_VP   Average normalized peri-event time histograms.
 %   AVG_PSTH_VP(CELLIDS1,CELLIDS2,RESPONSESPEC) calculates normalized
 %   average PSTHs aligned to RESPONSESPEC (cue, reward or punishment) for
@@ -7,6 +7,9 @@ function avg_psth_VP(cellids1,cellids2,responsespec,resdir)
 %   z-scored by the mean and SD of a predefined baseline window before
 %   averaging.
 %
+%   AVG_PSTH_VP(CELLIDS,CELLIDS,RESPONSESPEC,'BURST') compares the PSTHs of
+%   bursts and single spikes.
+%
 %   See also ULTIMATE_PSTH.
 
 %   Panna Hegedus, Balazs Hangya
@@ -14,11 +17,18 @@ function avg_psth_VP(cellids1,cellids2,responsespec,resdir)
 %   hangya.balazs@koki.mta.hu
 %   03-Dec-2019
 
-%   Code review: BH 12/6/19, 4/8/20
+%   Code review: BH 12/6/19, 4/8/20, 10/16/20
 
 % Directories
 if ~isfolder(resdir)
     mkdir(resdir)
+end
+
+% Input argument check
+if nargin < 5
+    spike_def = {[] []};
+elseif strcmp(spike,'burst')
+    spike_def = {'burst' 'single'};
 end
 
 % Aligning: cue, reward or punishment
@@ -51,12 +61,12 @@ btime = bwin(1)*1000:dt*1000:bwin(2)*1000;   % baseline time vector
 R1 = runanalysis(@ultimate_psth,...
     'trial', alignevent, wn,...
     'dt',dt,'display',false,'sigma',0.08,'parts','all','isadaptive',2,...
-    'event_filter','custom', 'filterinput',filterevent,'maxtrialno',Inf,...
+    'event_filter','custom', 'filterinput',filterevent,'spike_def', spike_def{1}, 'maxtrialno',Inf,...
     'baselinewin',bwin,'testwin',[0 0.5],'relative_threshold',0.1,'cellids',cellids1);
 R2 = runanalysis(@ultimate_psth,...
     'trial', alignevent, wn,...
     'dt',dt,'display',false,'sigma',0.08,'parts','all','isadaptive',2,...
-    'event_filter','custom', 'filterinput',filterevent,'maxtrialno',Inf,...
+    'event_filter','custom', 'filterinput',filterevent,'spike_def', spike_def{2}, 'maxtrialno',Inf,...
     'baselinewin',bwin,'testwin',[0 0.5],'relative_threshold',0.1,'cellids',cellids2);
 R = [{R1} {R2}];
 Rinx = 2;
@@ -78,7 +88,7 @@ Hb = figure;
 imagesc(psth_R2(sinx,:))
 
 H = figure;
-errorshade(time,mean(psth_R1),std(psth_R1)/sqrt(size(psth_R1,1)),...
+errorshade(time,nanmean(psth_R1),nanstd(psth_R1)/sqrt(size(psth_R1,1)),...
     'LineColor',[0 0 1],'ShadeColor',[0 0 1]) % excitation
 errorshade(time,mean(psth_R2),std(psth_R2)/sqrt(size(psth_R2,1)),...
     'LineColor',[0 0 0.5],'ShadeColor',[0 0 0.5]) % inhibition

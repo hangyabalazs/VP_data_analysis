@@ -229,8 +229,8 @@ for iP = 1:numPairs   % loop through pairs of cells
 end
 switch g.whichcells
     case 'nontetrodepairs'
-        save(fullfile(resdir1,'cellgroups_nontetrodepairs.mat'),'monosyn_exc_nttp','sync_exc_nttp','sync_monosyn_nttp');
+        save(fullfile(resdir1,'cellgroups_nontetrodepairs2.mat'),'monosyn_exc_nttp','sync_exc_nttp','sync_monosyn_nttp');
     case 'tetrodepairs'
-        save(fullfile(resdir1,'cellgroups_tetrodepairs.mat'),'monosyn_exc_ttp','sync_exc_ttp');
+        save(fullfile(resdir1,'cellgroups_tetrodepairs2.mat'),'monosyn_exc_ttp','sync_exc_ttp');
 end
 end

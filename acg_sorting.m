@@ -10,6 +10,8 @@ function acg_sorting(cellids, sourcedir, resdir_burst, resdir_nonburst)
 %their autocorrelogram is saved to RESDIR_BURST. Acg of non-bursting
 %neurons are saved to RESDIR_NONBURST.
 
+%See also ACG.M
+
 %   Panna Hegedus, Balazs Hangya
 %   Institute of Experimental Medicine
 %   hangya.balazs@koki.mta.hu
@@ -24,7 +26,7 @@ if ~isfolder(resdir_nonburst)
 end
 
 numPC = length(cellids);
-load([sourcedir '\ACG_matrices_.mat']); %load acg matrix 
+load([sourcedir '\ACG_matrices.mat']); %load acg matrix 
 
 for k = 1:numPC
     cellid = char(cellids{k});

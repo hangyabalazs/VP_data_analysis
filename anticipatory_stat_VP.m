@@ -1,12 +1,13 @@
-function anticipatory_stat_VP(animalID, resdir)
+function T = anticipatory_stat_VP(animalID, resdir)
 %ANTICIPATORY_STAT_VP compares anticipatory licking to two reinforcement
 %predicting stimuli.
-%   ANTICIPATORY_STAT_VP(ANIMALID, RESDIR) exctracts anticipatory licks in
+%   T = ANTICIPATORY_STAT_VP(ANIMALID, RESDIR) exctracts anticipatory licks in
 %   a training session of an animal (ANIMALID) from TrialEvents (licks that
 %   occur after the cue presentation and before reinforcement) and performs
 %   a Wilcoxon signed rank test to compare the frequency of anticipatory
 %   licking after reward or punishment predicting cue in Pavlovian
-%   conditioning. The frist 20 trials can be free access of water in the
+%   conditioning. T is the average lick frequency in each session for the cues. The frist 
+%   20 trials can be free access of water in the
 %   training protocol, therefore these trials are skipped. The results are
 %   saved as an .xlsx file into RESDIR.
 %

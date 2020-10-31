@@ -36,7 +36,7 @@ if ~isfolder(resdir3)
 end
 
 % Load ACG matrices - necessary for rhythmicity detection
-load(fullfile(acgsource,'ACG_matrices_.mat')); %#ok<*LOAD>
+load(fullfile(acgsource,'ACG_matrices.mat')); %#ok<*LOAD>
 
 % Select cells
 if isempty(vpcells)
@@ -145,7 +145,7 @@ end
 
 % Save
 fnmm = 'phasic_response.mat'; % save phasic cellids
-save(fullfile(resdir,fnmm),'phasic_cells','BetaIndex','GammaIndex')
+save(fullfile(resdir,fnmm),'phasic_cells','BetaIndex','GammaIndex', 'isbeta', 'isgamma')
 
 % -------------------------------------------------------------------------
 function filenames = sourcefiles(sourcedir)

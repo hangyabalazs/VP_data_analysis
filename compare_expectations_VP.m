@@ -121,3 +121,9 @@ elseif responsespec == -1
 end
 filename = fullfile(resdir,['compare_expectation' responsetype '_' tag '.fig']);
 saveas(H,filename);
+set(H,'Renderer', 'painters');
+filename2 = fullfile(resdir,['compare_expectation' responsetype '_' tag '.eps']);
+saveas(H,filename2);
+filename3 = fullfile(resdir,['compare_expectation' responsetype '_' tag '.jpg']);
+saveas(H,filename3);
+close(H)

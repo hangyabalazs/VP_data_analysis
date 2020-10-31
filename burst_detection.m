@@ -26,7 +26,7 @@ else
 end
 
 % Directories
-resdir = fullfile(getpref('cellbase','datapath'),'_paper_figs', 'code_review2', 'fig6', 'PSTH_burst_vs_singlespike');   % results directory
+resdir = fullfile(getpref('cellbase','datapath'),'_paper_figs', 'code_review3', 'fig6', 'PSTH_burst_vs_singlespike');   % results directory
 if ~isdir(resdir)
     mkdir(resdir)
 end
@@ -78,11 +78,11 @@ switch spiketype
         end
         
         % Test activation/inhibition for cue, reward and punishment
-        vpresponsesorter_burst(vpcells,1,resdir, 'cue');
-        vpresponsesorter_burst(vpcells,1,resdir, 'rew');
-        vpresponsesorter_burst(vpcells,1,resdir, 'pun');
+        vpresponsesorter_burst(vpcells,1,resdir,'cue');
+        vpresponsesorter_burst(vpcells,1,resdir,'rew');
+        vpresponsesorter_burst(vpcells,1,resdir,'pun');
         
-    otherwise 'single'
+    case 'single'
         for i = 1:numCells
             
             problem_stim_cellid = [];
@@ -126,7 +126,7 @@ switch spiketype
         end
         
         % Test activation/inhibition for cue, reward and punishment
-        vpresponsesorter_single(vpcells,1,resdir, 'cue'); 
-        vpresponsesorter_single(vpcells,1,resdir, 'rew');
-        vpresponsesorter_single(vpcells,1,resdir, 'pun');
+        vpresponsesorter_single(vpcells,1,resdir,'cue'); 
+        vpresponsesorter_single(vpcells,1,resdir,'rew');
+        vpresponsesorter_single(vpcells,1,resdir,'pun');
 end

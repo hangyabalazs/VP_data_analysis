@@ -4,7 +4,8 @@ function vpresponsesorter(cellids,issave,response_resdir,responsespec)
 %   set of cells (see ULTIMATE_PSTH) aligned to stimulus onset and feedback
 %   delivery. Statistical tests are performed to probe significant firing
 %   rate changes of responses (see PSTH_STATS). Indicators for significant
-%   responses (p < 0.001) are added to CellBase as properties.
+%   responses (p < 0.001, one-sided Mann-Whitney U-test) are added to
+%   CellBase as properties.
 %   Input parameters:
 %       CELLIDS - list of cell IDs; if empty or not specified, all
 %           well-separated cells are selected (ID>20, L-ratio<0.15; see
@@ -46,6 +47,7 @@ load(getpref('cellbase','fname'),'CELLIDLIST');
 % Raster + PSTH
 switch responsespec
     case 'cue'
+        
         % Raster + PSTH aligned to stimulus onset
         alignevent = 'StimulusOn';   % trigger event
         shevent = 'DeliverAllFeedback';  % show-event
@@ -91,6 +93,7 @@ switch responsespec
         end
         
     case 'rew'
+        
         % Raster + PSTH aligned to feedback delivery
         alignevent = 'DeliverAllFeedback';   % trigger event
         shevent = 'StimulusOn';  % show-event
@@ -144,6 +147,7 @@ switch responsespec
         end
         
     case 'pun'
+        
         % Raster + PSTH aligned to feedback delivery
         alignevent = 'DeliverAllFeedback';   % trigger event
         shevent = 'StimulusOn';  % show-event

@@ -1,10 +1,11 @@
 function vpresponsesorter_single(cellids,issave,resdir,responsespec)
-%VPRESPONSESORTER   Peri-event time histogram.
-%   VPRESPONSESORTER(CELLIDS,ISSAVE) calculates non-adaptive PSTHs for a
-%   set of cells (see ULTIMATE_PSTH) aligned to stimulus onset and feedback
-%   delivery. Statistical tests are performed to probe significant firing
-%   rate changes of responses (see PSTH_STATS). Indicators for significant
-%   responses (p < 0.01) are added to CellBase as properties.
+%VPRESPONSESORTER_SINGLE   Peri-event time histogram for single spikes.
+%   VPRESPONSESORTER_SINGLE(CELLIDS,ISSAVE) calculates non-adaptive PSTHs
+%   of single (non-burst) spikes for a set of cells (see ULTIMATE_PSTH)
+%   aligned to stimulus onset and feedback delivery. Statistical tests are
+%   performed to probe significant firing rate changes of responses (see
+%   PSTH_STATS). Indicators for significant responses (p < 0.001, one-sided
+%   Mann-Whitney U-test) are added to CellBase as properties.
 %   Input parameters:
 %       CELLIDS - list of cell IDs; if empty or not specified, all
 %           well-separated cells are selected (ID>20, L-ratio<0.15; see
@@ -14,7 +15,7 @@ function vpresponsesorter_single(cellids,issave,resdir,responsespec)
 %       RESPONSESPEC - 'cue' for cue response, 'rew' for reward response
 %       and 'pun' for punishment response
 %
-%   See also ULTIMATE_PSTH and LRATIO.
+%   See also VPRESPONSESORTER, ULTIMATE_PSTH and LRATIO.
 
 %   Balazs Hangya, Panna Hegedus
 %   Institute of Experimental Medicine, Hungarian Academy of Sciences
@@ -22,27 +23,30 @@ function vpresponsesorter_single(cellids,issave,resdir,responsespec)
 %   11-Nov-2018
 
 % Directories
-load(getpref('cellbase','fname'));
-
-global DATAPATH
 response_resdir = fullfile(resdir,'vpresponsesorter_single');   % results directory
-if ~isdir(response_resdir)
+if ~isfolder(response_resdir)
     mkdir(response_resdir)
 end
 
 % Input argument check
 narginchk(0,4);
-if nargin < 3
+if nargin < 2
     issave = true;   % default saving behavior
 end
-if nargin < 2
+if nargin < 1
     vpcells = [];   % all well-isolated units
 else
     vpcells = cellids;
 end
 numCells = length(vpcells);
+
+% Load CellBase
+load(getpref('cellbase','fname'),'CELLIDLIST');
+
+% Raster + PSTH
 switch responsespec
     case 'cue'
+        
         % Raster + PSTH aligned to stimulus onset
         alignevent = 'StimulusOn';   % trigger event
         shevent = 'DeliverAllFeedback';  % show-event
@@ -64,7 +68,7 @@ switch responsespec
             cellid = vpcells{iC};   % current cell
             stats1 = rasterPSTH(cellid,alignevent,shevent,partition,wn,dt,sigma,bwin,twin,issave,response_resdir);
             
-            % Add property to CellBase
+            % Add property to CellBase - inhibition taken over activation!
             if length(stats1) > 1  % if there are two sounds
                 if stats1{1}.Wpi < 0.001 || stats1{2}.Wpi < 0.001
                     st = setvalue(cellid,propname,-1);   % inhibited
@@ -108,16 +112,9 @@ switch responsespec
         % PSTH
         for iC = 1:numCells
             cellid = vpcells{iC};   % current cell
-            animalID= char(cellid(1:5));%animalID
-            sessionID= char(cellid(7:13));%sessionID
-            fullpth = fullfile(getpref('cellbase','datapath'),animalID,sessionID);
-            
-%             TE = solo2trialevents_auditory_cuedoutcome(fullfile(fullpth,[animalID sessionID '.mat']),1);
-%             MakeTrialEvents2_gonogo_p(fullpth)  % synchronize
-            
             stats2 = rasterPSTH(cellid,alignevent,shevent,partition,wn,dt,sigma,bwin,twin,issave,response_resdir);
             
-            %     Add property to CellBase
+            % Add property to CellBase
             if ~isnan(stats2{1}.Wpi) && ~isnan(stats2{1}.Wpa)
                 if stats2{1}.Wpi < 0.001 && stats2{1}.Wpa > 0.001   % reward
                     st = setvalue(cellid,propname1,-1);   % inhibited
@@ -152,6 +149,7 @@ switch responsespec
             end
         end
     case 'pun'
+        
         % Raster + PSTH aligned to feedback delivery
         alignevent = 'DeliverAllFeedback';   % trigger event
         shevent = 'StimulusOn';  % show-event
@@ -234,7 +232,7 @@ maximize_figure
 PSTHaxis_handle = findobj(allchild(V_handle),'type','axes','XLim',[0 1],'YLim',[0 1],'Tag','');   % handle for the empty PSTH axes
 [~, ~, ~, ~, ~, stats1] = ...
     ultimate_psth(cellid,'trial',alignevent,wn,...
-    'dt',dt,'sigma',sigma,'parts',partition,'isadaptive',0,...
+    'dt',dt,'sigma',sigma,'parts',partition,'spike_def', 'single', 'isadaptive',0,...
     'maxtrialno',Inf,'baselinewin',bwin,'testwin',twin,'relative_threshold',0.1,'display',true); % calculate psth
 
 % Plot & save

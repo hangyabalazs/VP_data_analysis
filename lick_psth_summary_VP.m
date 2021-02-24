@@ -32,9 +32,9 @@ end
 % sessions (only first sessions if there were more sessions per day)
 cells2use = [];
 cellids = vpcells'; % VP cell IDs
-animalIDs = getvalue('RatId', cellids); 
+animalIDs = getvalue('RatId', cellids);
 SessionID = getvalue('DateNum', cellids);
-animals = unique(animalIDs); 
+animals = unique(animalIDs);
 for i = 1:length(animals)  % find cells of all animals
     currentCells = cellids(animalIDs == animals(i));
     sessionIDs = sort(unique(getvalue('DateNum', currentCells)), 'ascend');
@@ -85,7 +85,13 @@ errorshade(time,nanmean(FA_allpsth),nanstd(FA_allpsth)/sqrt(size(FA_allpsth,1)),
     'LineColor',red,'ShadeColor',red)
 if issave
     fnm = fullfile(resdir,'average_lickPSTH.fig');
+    set(H, 'renderer', 'painters')
+    fnm2 = fullfile(resdir,'average_lickPSTH.eps');
+    fnm3 = fullfile(resdir,'average_lickPSTH.jpg');
     saveas(H,fnm)
+    saveas(H,fnm2)
+    saveas(H,fnm3)
+    
 end
 
 % -------------------------------------------------------------------------

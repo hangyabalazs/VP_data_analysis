@@ -89,9 +89,12 @@ R1 = runanalysis(@ultimate_psth,...
     'dt',dt,'display',false,'sigma',0.08,'parts','all','isadaptive',2,...
     'event_filter','custom', 'filterinput',filters{1},'maxtrialno',Inf,...
     'baselinewin',[-1 0],'forcesmoothedstat', true,'testwin',[0 0.5],'relative_threshold',0.1,'cellids',cells);
+if strcmp(responsetype, 'punishresponse') % 2021/02/17 edit: exclude one punishment responsive cell with unrealistically low SD
+    R1(36, :) = [];
+    R2(36, :) = [];
+end
 
 % Index for time 0
-
 st = abs(wn(1)) / dt;   % in ms
 nullindex = st + 1;
 
@@ -126,9 +129,10 @@ for i =1:size(BR1 ,1)  % loop through cells
 end
 
 % Box-whisker plot
-[H, Wp] = boxstat(avg_spikecount1,avg_spikecount2,'T1','T2',0.005,'paired');
-    boxplot(avg_spikecount1-avg_spikecount2);
-    I = gcf;
+[H, Wp] = boxstat2(avg_spikecount1,avg_spikecount2,'T1','T2',0.005,'paired');
+boxplot(avg_spikecount1-avg_spikecount2);
+I = gcf;
+
 % Save figure
 if responsespec == 1
     tag = 'excitation';

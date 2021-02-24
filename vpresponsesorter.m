@@ -204,6 +204,59 @@ switch responsespec
                 end
             end
         end
+    case 'om'
+        
+        % Raster + PSTH aligned to feedback delivery
+        alignevent = 'DeliverAllFeedback';   % trigger event
+        shevent = 'StimulusOn';  % show-event
+        partition = '#Omission';   % partition trials
+        wn = [-3 3];   % full raster window in seconds
+        dt = 0.001;   % raster resolution, in seconds
+        sigma = 0.02;   % controls smoothing for 'spsth'
+        bwin = [-3 -2];   % baseline window for MW-test (before cue) - -3.4 was the limit
+        twin = [0 0.2];   % test-window for MW-test
+        
+        % Add propoerty for grouping
+        propname1 = 'omissionresponse';
+        if ~ismember(propname1,listtag('prop'))
+            insertdata([CELLIDLIST' num2cell(nan(size(CELLIDLIST')))],'type','property','name',propname1)
+        end
+        
+        % PSTH
+        for iC = 1:numCells
+            cellid = vpcells{iC};   % current cell
+            stats2 = rasterPSTH(cellid,alignevent,shevent,partition,wn,dt,sigma,bwin,twin,issave,response_resdir);
+            
+            % Add property to CellBase
+            if ~isnan(stats2{1}.Wpi) && ~isnan(stats2{1}.Wpa)
+                if stats2{1}.Wpi < 0.001 && stats2{1}.Wpa > 0.001   % reward
+                    st = setvalue(cellid,propname1,-1);   % inhibited
+                elseif stats2{1}.Wpa < 0.001 && stats2{1}.Wpi > 0.001
+                    st = setvalue(cellid,propname1,1);   % activated
+                elseif stats2{1}.Wpa < 0.001 && stats2{1}.Wpi < 0.001
+                    st = setvalue(cellid,propname1,2);   % activated and inhibited
+                else
+                    st = setvalue(cellid,propname1,0);   % non-responsive
+                end
+            elseif ~isnan(stats2{1}.Wpi) && isnan(stats2{1}.Wpa)
+                if stats2{1}.Wpi < 0.001  % reward
+                    st = setvalue(cellid,propname1,-1);   % inhibited
+                else
+                    st = setvalue(cellid,propname1,0);   % non-responsive
+                end
+            elseif isnan(stats2{1}.Wpi) && ~isnan(stats2{1}.Wpa)
+                if stats2{1}.Wpa < 0.001  % reward
+                    st = setvalue(cellid,propname1,1);   % activated
+                else
+                    st = setvalue(cellid,propname1,0);   % non-responsive
+                end
+            else
+                st = setvalue(cellid,propname1,0);   % non-responsive
+            end
+            if ~st
+                error('MATLAB:vpresponsesorter:setvalueStatus','Error using setvalue.m')
+            end
+        end
 end
 
 % -------------------------------------------------------------------------
@@ -261,10 +314,10 @@ end
 % Save figure
 if issave
     cellidt = regexprep(cellid,'\.','_');
-%     fnm = fullfile(response_resdir,[cellidt '_' alignevent '_' partition(2:end) '.jpg']);
-%     saveas(V_handle,fnm)
-%     fnm2 = fullfile(response_resdir,[cellidt '_' alignevent '_' partition(2:end) '.fig']);
-%     saveas(V_handle,fnm2)
+    %     fnm = fullfile(response_resdir,[cellidt '_' alignevent '_' partition(2:end) '.jpg']);
+    %     saveas(V_handle,fnm)
+    %     fnm2 = fullfile(response_resdir,[cellidt '_' alignevent '_' partition(2:end) '.fig']);
+    %     saveas(V_handle,fnm2)
     fnm = fullfile(response_resdir,[cellidt '_' alignevent '_' partition(2:end) '.mat']);
     warning('off','MATLAB:Figure:FigureSavedToMATFile')
     save(fnm,'stats1')

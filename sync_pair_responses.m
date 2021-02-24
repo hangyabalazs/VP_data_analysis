@@ -28,8 +28,8 @@ load(fullfile(sourcedir,'\cellgroups_nontetrodepairs.mat'));
 Pairs = [sync_exc_nttp sync_exc_ttp sync_monosyn_nttp];
 sync_cellids = unique([Pairs{:}]);
 
-sync_cellids = vpcells(ismember(vpcells,sync_cellids)); % nonsynchronous cells
-sync_cellinx = find(ismember(CELLIDLIST ,sync_cellids)); % nonsynchronous cellids
+sync_cellids = vpcells(ismember(vpcells,sync_cellids)); % synchronous cells
+sync_cellinx = find(ismember(CELLIDLIST ,sync_cellids)); % synchronous cellids
 
 nonsync_cellids = vpcells(~ismember(vpcells,sync_cellids)); % nonsynchronous cells
 nonsync_cellinx = find(ismember(CELLIDLIST ,nonsync_cellids)); % nonsynchronous cellids

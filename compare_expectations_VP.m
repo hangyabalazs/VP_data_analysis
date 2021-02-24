@@ -15,7 +15,7 @@ function compare_expectations_VP(vpcells, responsetype, responsespec, resdir)
 %   Panna Hegedus, Balazs Hangya
 %   Institute of Experimental Medicine
 %   hangya.balazs@koki.mta.hu
-%   05-Feb-2020 
+%   05-Feb-2020
 
 %   Code review: BH 2/10/20, 4/8/20
 
@@ -28,7 +28,7 @@ end
 if ~isfolder(resdir)
     mkdir(resdir)
 end
-    
+
 % Sub-select neurons that respond to the event of interest
 resp = getvalue(responsetype,vpcells);
 cells = vpcells(resp==responsespec);
@@ -41,7 +41,7 @@ for i = 1:NumCells
     E = loadcb(cellid,'TrialEvents');   % load events
     if strcmp(responsetype, 'cueresponse')
         if sum(E.TrialType==2) == 0  % if there is no second type of trials
-             delstr(i) = 0;
+            delstr(i) = 0;
         end
     elseif strcmp(responsetype, 'rewardresponse')
         if (sum(E.AllReward==2) == 0) || (sum(E.AllReward==2) < 5) || (sum(E.AllReward==1) < 5) % if there is no second type of trials
@@ -54,6 +54,7 @@ for i = 1:NumCells
     end
 end
 cells = cells(delstr==1);
+
 
 % Define filterinput
 switch responsetype
@@ -95,13 +96,29 @@ for iC = 1:NumCell
     sd = std(R1{iC,Rinx}(baseline_inx));
     sd2 = std(R2{iC,Rinx}(baseline_inx));
     
-    if sd >= 0.1 && sd2 >= 0.1
-        psth_R1(iC,:) = (R1{iC,Rinx} - mn) / sd;   % the same mean and SD used within a cell,
-        psth_R2(iC,:) = (R2{iC,Rinx} - mn) / sd;   % to preserve the trial-type differences
-    end
+    %     if sd >= 0.1 && sd2 >= 0.1
+    psth_R1(iC,:) = (R1{iC,Rinx} - mn) / sd;   % the same mean and SD used within a cell,
+    psth_R2(iC,:) = (R2{iC,Rinx} - mn) / sd;   % to preserve the trial-type differences
+    %     end
 end
 psth_R1(any(isnan(psth_R1), 2), :) = [];
 psth_R2(any(isnan(psth_R2), 2), :) = [];
+
+if strcmp(responsetype, 'punishresponse') % 2021/02/17 edit: exclude one punishment responsive cell with unrealistically low SD
+    psth_R1(36, :) = [];
+    psth_R2(36, :) = [];
+end
+
+
+% Color coded histogram
+Ha = figure;
+[~, sinx] = sort(max(psth_R1,[],2), 'descend');   % sort by maximum
+imagesc(psth_R1(sinx,:))
+colorbar
+Hb = figure;
+[~, sinx] = sort(min(psth_R2,[],2), 'descend');   % sort by minimum
+imagesc(psth_R2(sinx,:))
+colorbar
 
 % Plot
 inx = 1:size((psth_R1),1);  % all
@@ -126,4 +143,5 @@ filename2 = fullfile(resdir,['compare_expectation' responsetype '_' tag '.eps'])
 saveas(H,filename2);
 filename3 = fullfile(resdir,['compare_expectation' responsetype '_' tag '.jpg']);
 saveas(H,filename3);
+save(fullfile(resdir,['compare_expectation' responsetype '_' tag '_data.mat']), 'R1', 'R2')
 close(H)

@@ -40,12 +40,24 @@ load(fullfile(acgsource,'ACG_matrices.mat')); %#ok<*LOAD>
 
 % Select cells
 if isempty(vpcells)
-    vpcells = cellids; %if no cellid inputs - use the ones in the matrix
+    vpcells = cellids; %if no cellid inputs - use the ones in the ACG matrix
+else
+    cellind = cellfun(@(x)ismember(cellids,x), vpcells, 'UniformOutput' , false)
+    cellind = logical(sum(vertcat(cellind{:}),1));
+    vpcells = cellids(cellind);
+    BurstIndex = BurstIndex(cellind);
+    CCR = CCR(cellind,:);
+    Refractory = Refractory(cellind);
+    SCCR = SCCR(cellind,:);
+    SegmentLength = SegmentLength(cellind);
+    ThetaIndex = ThetaIndex(cellind);
 end
 
 % Preallocate
 numCells = length(vpcells);
 [peaks, peak_inx, lagms] = deal(nan(1,numCells));
+
+
 
 % Exclude bursting neurons
 res = 0.5;  % ACG resolution
@@ -53,14 +65,14 @@ phasewin1 = 10;
 phasewin2 = 5;
 ACGh = SCCR(:,1001:2000);  % half acg (smoothed)
 lagsh = lags(1001:2000); % corresponding half of time vector in ms
-for i = 1:length(cellids)  % loop through cells
+for i = 1:numCells  % loop through cells
     cACGh = ACGh(i,:);
     peaks(i) = max(cACGh);
     peak_inxx = find(cACGh == peaks(i));
     peak_inx(i)= peak_inxx(end);
     lagms(i) = lagsh(peak_inx(i));
 end
-phasic_cells = cellids(10<lagms & lagms<=67); % only choosing beta and gamma cells and eliminate bursting ones (lag>10ms)
+phasic_cells = vpcells(10<lagms & lagms<=67); % only choosing beta and gamma cells and eliminate bursting ones (lag>10ms)
 phasic_lagms = lagms(10<lagms & lagms<=67);
 
 % Beta and gamma index calculation
@@ -70,7 +82,7 @@ numPC = length(phasic_cells); % number of phasic cells
 for j = 1:numPC  % loop through non-bursting cells with <67 ms ACG peaks
     
     cellid = phasic_cells{j};
-    cellinx(j) = find(strcmp(cellids,cellid)); % getting index from original cellidlist
+    cellinx(j) = find(strcmp(vpcells,cellid)); % getting index from original cellidlist
     pACGh = ACGh(cellinx(j),:);  % acg of the current phasic cell
     
     % Find beta peak
@@ -122,26 +134,26 @@ for k = Ambig_cells
 end
 
 % Copy psth and acg plots of rhythmic cells
-filenames1 = sourcefiles(acgsource); % acg filenames
-filenames2 = sourcefiles(psthsource); % psth filenames
-for k = 1:numPC
-    cellid = char(phasic_cells{k});
-    sttc = regexprep(cellid,'\.','_');  % string to compare
-    
-    % Move acg to folder
-    cd(acgsource);
-    if BetaIndex(k) > 0.4 || GammaIndex(k) > 0.25  % copy rhythmic cell acgs to folder
-        copyfile(['*' sttc '*'], resdir);
-    else
-        copyfile(['*' sttc '*'], resdir2);  % copy non rhythmic cell acgs to another folder
-    end
-
-    % Move psth to folder
-    cd(psthsource);
-    if BetaIndex(k) > 0.4 || GammaIndex(k) > 0.25  % copy rhythmic cell acgs to folder
-        copyfile(['*' sttc '*'], resdir3);
-    end
-end
+% filenames1 = sourcefiles(acgsource); % acg filenames
+% filenames2 = sourcefiles(psthsource); % psth filenames
+% for k = 1:numPC
+%     cellid = char(phasic_cells{k});
+%     sttc = regexprep(cellid,'\.','_');  % string to compare
+%     
+%     % Move acg to folder
+%     cd(acgsource);
+%     if BetaIndex(k) > 0.4 || GammaIndex(k) > 0.25  % copy rhythmic cell acgs to folder
+%         copyfile(['*' sttc '*'], resdir);
+%     else
+%         copyfile(['*' sttc '*'], resdir2);  % copy non rhythmic cell acgs to another folder
+%     end
+% 
+%     % Move psth to folder
+%     cd(psthsource);
+%     if BetaIndex(k) > 0.4 || GammaIndex(k) > 0.25  % copy rhythmic cell acgs to folder
+%         copyfile(['*' sttc '*'], resdir3);
+%     end
+% end
 
 % Save
 fnmm = 'phasic_response.mat'; % save phasic cellids

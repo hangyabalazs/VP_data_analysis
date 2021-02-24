@@ -1,7 +1,7 @@
 function slowanalysis_pavlovian(vpcells, preprocess, fig1spec, fig2spec, ...
-    fig3spec, fig4spec, fig5spec, fig6spec, fig7spec, fig8spec, suppl_figspec)
+    fig3spec, fig4spec, fig5spec, fig6spec, fig7spec, fig8spec, suppl_figspec, rev_figspec)
 %SLOWANALYSIS_PAVLOVIAN   Analysis main function for VP project.
-%   SLOWANALYSIS_PAVLOVIAN(VPCELLS, PRE, F1, F2, ..., F8, S1) is the main
+%   SLOWANALYSIS_PAVLOVIAN(VPCELLS, PRE, F1, F2, ..., F8, S1, R1) is the main
 %   function for ventral pallidal data analysis. Data analysis is performed
 %   for CellIDs in VPCELLS - or all well-isolated units determined by
 %   VPSELECTCELLS if the first input is empty. The analysis modules are
@@ -19,9 +19,10 @@ function slowanalysis_pavlovian(vpcells, preprocess, fig1spec, fig2spec, ...
 %   05-Feb-2020
 
 %   Code review: BH 2/12/20, 4/8/20
+%   Code for review process (iScience) added 18/02/2021
 
 % Input argument check
-narginchk(0,11)
+narginchk(0,12)
 if nargin < 1
     vpcells = [];
 end
@@ -82,6 +83,9 @@ select_pairs = fig7spec(1); % FIG.7A-B - network of synaptic pairs
 if nargin < 10
     fig8spec = [1 1 1];
 end
+vpcross = fig8spec(1); % FIG.8A-B - example and average CCG
+sync_pie_PSTH = fig8spec(2); % FIG.8C-I - pie chart and average PSTH for sync and non-sync
+norhythmandburst = fig8spec(3); % FIG.8K - pie chart of sync firing in the non-bursting-non-rhythmic group
 
 if nargin < 11  % do supplementary analysis or not
     suppl_figspec = [1 1 1 1 1];
@@ -92,9 +96,18 @@ figS3spec = suppl_figspec(3); % FigS3
 figS4spec = suppl_figspec(4); % FigS4
 figS5spec = suppl_figspec(5); % FigS5
 
-vpcross = fig8spec(1); % FIG.8A-B - example and average CCG
-sync_pie_PSTH = fig8spec(2); % FIG.8C-I - pie chart and average PSTH for sync and non-sync
-norhythmandburst = fig8spec(3); % FIG.8K - pie chart of sync firing in the non-bursting-non-rhythmic group
+if nargin < 12  % figures for revision
+    rev_figspec = [1 1 1 1 1 1 1 1 1];
+end
+figR1spec = rev_figspec(1);
+figR2spec = rev_figspec(2);
+figR3spec = rev_figspec(3);
+figR4spec = rev_figspec(4);
+figR5spec = rev_figspec(5);
+figR6spec = rev_figspec(6);
+figR8spec = rev_figspec(7);
+figR9spec = rev_figspec(8);
+figR10spec = rev_figspec(9);
 
 % Stop if error
 dbstop if error
@@ -109,12 +122,23 @@ end
 loadcb
 vpcells = vpselectcells(vpcells);
 
+if figR6spec % Exclude possible replicates of recorded neurons- FIGR6
+    Cells2Exclude = trackoverdays(vpcells);
+    vpcells = setdiff(vpcells, Cells2Exclude);
+end
+
+if figR9spec % FIGR9 - exclude PV-Cre animal
+    VP17cells = findcell('Rat', 'HDB17')
+    vpcells = setdiff(vpcells, VP17cells);
+end
+
 % Grouping neurons based on their response during behavior - properties added to TheMatrix
 response_resdir = fullfile(resdir,'vpresponsesorter');   % results directory
 if response_analysis
     vpresponsesorter(vpcells,1,response_resdir,'cue');
     vpresponsesorter(vpcells,1,response_resdir,'rew');
     vpresponsesorter(vpcells,1,response_resdir,'pun');
+    vpresponsesorter(vpcells,1,response_resdir,'om');
 end
 
 % Auto-correlation
@@ -256,7 +280,7 @@ end
 
 % PSTH comparison of expected vs. unexpected - FIG.3A,C,E
 if compare_exp_psth
-    resdir_compare_exp_psth = fullfile(resdir,'fig3','compare_exp_psth');
+    resdir_compare_exp_psth = fullfile(resdir,'fig3_allcells','compare_exp_psth');
     responsetype = [1, -1]; % excitation or onhibition
     for i = 1:length(responsetype)
         responsespec = responsetype(i);
@@ -312,23 +336,23 @@ if pie_PSTH_bursting
     nonbursting = getcellresp(nonbursting_cells);
     
     % PSTH averages - FIG.4D-I
-    resdir_avg_psth_VP1 = fullfile(resdir,'fig4','bursting04');
+    resdir_avg_psth_VP1 = fullfile(resdir,'fig4','bursting30');
     avg_psth_VP(bursting.cue.excitation,bursting.cue.inhibition,'cueresponse',resdir_avg_psth_VP1);
     avg_psth_VP(bursting.reward.excitation,bursting.reward.inhibition,'rewardresponse',resdir_avg_psth_VP1);
     avg_psth_VP(bursting.punishment.excitation,bursting.punishment.inhibition,'punishresponse',resdir_avg_psth_VP1);
     
-    resdir_avg_psth_VP2 = fullfile(resdir,'fig4','nonbursting04');
+    resdir_avg_psth_VP2 = fullfile(resdir,'fig4','nonbursting30');
     avg_psth_VP(nonbursting.cue.excitation,nonbursting.cue.inhibition,'cueresponse',resdir_avg_psth_VP2);
     avg_psth_VP(nonbursting.reward.excitation,nonbursting.reward.inhibition,'rewardresponse',resdir_avg_psth_VP2);
     avg_psth_VP(nonbursting.punishment.excitation,nonbursting.punishment.inhibition,'punishresponse',resdir_avg_psth_VP2);
     
-    %      Compare responsive neuronal proportions - chi square-test
+    % Compare responsive neuronal proportions - chi square-test
     [tbl1, chi2stat1, pval1] = chi2_vp(length([bursting.cue.excitation' bursting.cue.inhibition']),length(bursting_cells),length([nonbursting.cue.excitation' nonbursting.cue.inhibition']),length(nonbursting_cells));
     [tbl2, chi2stat2, pval2] = chi2_vp(length([bursting.reward.excitation' bursting.reward.inhibition']),length(bursting_cells),length([nonbursting.reward.excitation' nonbursting.reward.inhibition']),length(nonbursting_cells));
     [tbl3, chi2stat3, pval3] = chi2_vp(length([bursting.punishment.excitation' bursting.punishment.inhibition']),length(bursting_cells),length([nonbursting.punishment.excitation' nonbursting.punishment.inhibition']),length(nonbursting_cells));
     
     % Maxvalue stats
-    resdir_maxval_comp_bursting = fullfile(resdir,'fig4','bursting_maxval04');
+    resdir_maxval_comp_bursting = fullfile(resdir,'fig4','bursting_maxval30');
     avg_psth_compare_maxval_VP(bursting.cue.excitation,'cueresponse',nonbursting.cue.excitation,'cueresponse','excitation',resdir_maxval_comp_bursting);
     avg_psth_compare_maxval_VP(bursting.reward.excitation,'rewardresponse',nonbursting.reward.excitation,'rewardresponse','excitation',resdir_maxval_comp_bursting);
     avg_psth_compare_maxval_VP(bursting.punishment.excitation,'punishresponse',nonbursting.punishment.excitation, 'punishresponse','excitation',resdir_maxval_comp_bursting);
@@ -340,7 +364,7 @@ if pie_PSTH_bursting
     % Average ACGs
     segfilter = 'stim_excl_vp'; % exclude recording segments with stimulation
     filterinput = {'light_activation_duration',[-5 5],'margins',[0 0]};
-    resdir_acg_average = fullfile(resdir,'fig4','acg_average');
+    resdir_acg_average = fullfile(resdir,'fig4','acg_average30');
     if ~isfolder(resdir_acg_average)
         mkdir(resdir_acg_average)
     end
@@ -444,7 +468,7 @@ if bursts
 end
 
 % Find cells with differential burst and single spike response - FIG.6G-H
-if pie_burst_single 
+if pie_burst_single
     resdir_burst_vs_spike = fullfile(resdir,'fig6','burst_vs_single_avg_psth'); % results directory
     resdir_pie6 = fullfile(resdir,'fig6');
     pval = 0.01;
@@ -532,6 +556,7 @@ if norhythmandburst  % FIG.8K - select non-bursting- non-rhythmic cells and comp
     if ~pie_PSTH_rhythmic
         resdir_acg_rhythmic = fullfile(resdir,'fig5','acg_rhythmic');  % rhythmic acg folder
     end
+    
     % Rhytmicity - calculate Beta and Gamma Index
     resdir_acg_rhythmic = fullfile(resdir,'fig5','acg_rhythmic');  % save acg
     resdir2 = fullfile(resdir,'fig5','acg_nonrhythmic');  % save acg
@@ -604,6 +629,265 @@ if figS5spec  % Fig.S5
     [s_response_per_animal] = sortresponses_animal(animals, s_cellids_per_animal);
     [as_response_per_animal] = sortresponses_animal(animals, as_cellids_per_animal);
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Analysis for review @ iScience %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Bursting and non-bursting cells
+load(fullfile(getpref('cellbase','datapath'), '_paper_figs\code_review3\ACG_matrices.mat'));  % load ACG matrices (generated by vpacg.m)
+bursting_cells = cellids(BurstIndex>0.2);  % numbers for FIG.4B
+nonbursting_cells = cellids(BurstIndex<=0.2);
+
+% Rhythmic and non-rhythmic cells
+resdir_acg_rhythmic = fullfile(resdir,'fig5','acg_rhythmic');  % save acg
+resdir2 = fullfile(resdir,'fig5','acg_nonrhythmic');  % save acg
+resdir3 = fullfile(resdir,'fig5','psth_rhythmic');  % for testing
+
+% Rhytmicity - calculate Beta and Gamma Index
+[phasic_cells, BetaIndex, GammaIndex, isbeta, isgamma] = pr_freq_detection_VP(vpcells,resdir_acg_rhythmic,resdir2,resdir3,acgdir,responsedir);
+beta_cells = phasic_cells(isbeta==1); % beta cells
+gamma_cells = phasic_cells(isgamma==1); % gamma cells
+
+rhythmic_cells = [beta_cells gamma_cells];  % rhythmic neurons
+rhythmic_cells = unique(rhythmic_cells);   % beta/gamma may overlap
+nonrhythmic_cells = setdiff(vpcells,rhythmic_cells);  % non-rhythmic VP neurons
+
+% Synchronous and asynchronous cells
+[sync_cellids, nonsync_cellids] = sync_pair_responses(vpcells,ccgdir); % synchronous and nonsynchronous cell groups (for pie chart)
+sync = getcellresp(sync_cellids); % synchronous cellgroups
+nonsync = getcellresp(nonsync_cellids); % nonsynchronous cellgroups
+
+rootdir = fullfile(getpref('cellbase', 'datapath'), '_paper_figs\Revision_iScience'); % all additional analysis is saved here
+
+if figR1spec
+    
+    % Show that airpuff is way louder than just the valve click -FIGR1.B
+    sourcedir = 'F:\auditory_pavlovian_cellbase\_paper_figs\Revision_iScience\_analysis\';
+    [valve_data, header, ~] = xlsread(fullfile(sourcedir, 'valve_vs_airpuff.xlsx'));
+    median_airpuff = median(valve_data(:,1));
+    median_valve = median(valve_data(:,2));
+    se_airpuff = se_of_median(valve_data(:,1));
+    se_valve = se_of_median(valve_data(:,2));
+    [h, p] = boxstat(valve_data(:,1),valve_data(:,2), 'airpuff', 'valve', 0.05)
+    figure;
+    bar([1 2], [median_airpuff, median_valve])
+    hold on
+    errorbar([1 2],  [median_airpuff, median_valve], [-se_airpuff, -se_valve], [se_airpuff, se_valve]);
+    set(gcf, 'renderer', 'painters')
+    saveas(gcf,fullfile(resdir_R1, 'airpuff_vs_valve.eps'));
+    
+    % Show the lack of neuronal response when omission occurs % - FIGR1.C
+    resdir_R1 = fullfile(rootdir, '_analysis', 'R1'); % results directories
+    resdir_avg_psth_o = fullfile(resdir_R1,'omissionresponse'); % results directory for omission 'responsive' cells aligned to feedback
+    resdir_avg_psth_o = fullfile(resdir_R1,'omissionresponse_rewardcells'); % results directory for reward responsive cells aligned to feedback
+    resdir_avg_psth_o = fullfile(resdir_R1,'omissionresponse_punishcells'); % results directory for punishment responsive cells aligned to feedback
+    
+    population = getcellresp(vpcells);   % output is used for Fig.R1 pie charts
+    avg_psth_VP(population.omission.excitation,population.omission.inhibition,'omissionresponse',resdir_avg_psth_o); % average PSTH
+    
+    % Reward and punishment responsive cells are not responding to the lack of reinforcement
+    avg_psth_VP(population.reward.excitation,population.reward.inhibition,'omissionresponse',resdir_avg_psth_o); % FigR1.D
+    avg_psth_VP(population.punishment.excitation,population.punishment.inhibition,'omissionresponse',resdir_avg_psth_o);
+end
+
+if figR2spec % analize bursting neurons using a 30ms ISI cutoff
+    acg_resdir30 = fullfile(rootdir,'vpacg30');   % results directory
+    vpacg30(vpcells,acg_resdir30,true); % autocorrelograms and burst indices are recalculated
+    
+    % Data used for pie charts - FIGR2.A-B
+    load(fullfile(acg_resdir30, 'ACG_matrices.mat'));  % load ACG matrices (generated by vpacg30.m)
+    bursting_cells30 = cellids(BurstIndex>0.2); % cellids of bursting cells
+    nonbursting_cells30 = cellids(BurstIndex<=0.2); % cellids of non-bursting cells
+    
+    bursting30 = getcellresp(bursting_cells30); % cue, reward and punishment response of bursting cells
+    nonbursting30 = getcellresp(nonbursting_cells30); % cue, reward and punishment response of non-bursting cells
+    
+    % PSTH averages - FIGR2.C-H
+    resdir_avg_psth_R2_1 = fullfile(rootdir, '_analysis', 'R2', 'bursting30');
+    avg_psth_VP(bursting30.cue.excitation,bursting30.cue.inhibition,'cueresponse',resdir_avg_psth_R2_1); %C
+    avg_psth_VP(bursting30.reward.excitation,bursting30.reward.inhibition,'rewardresponse',resdir_avg_psth_R2_1); %D
+    avg_psth_VP(bursting30.punishment.excitation,bursting30.punishment.inhibition,'punishresponse',resdir_avg_psth_R2_1); %E
+    
+    resdir_avg_psth_R2_2 = fullfile(rootdir, '_analysis', 'R2', 'nonbursting30');
+    avg_psth_VP(nonbursting30.cue.excitation,nonbursting30.cue.inhibition,'cueresponse',resdir_avg_psth_R2_2); %F
+    avg_psth_VP(nonbursting30.reward.excitation,nonbursting30.reward.inhibition,'rewardresponse',resdir_avg_psth_R2_2); %G
+    avg_psth_VP(nonbursting30.punishment.excitation,nonbursting30.punishment.inhibition,'punishresponse',resdir_avg_psth_R2_2); %H
+    
+    % Compare responsive neuronal proportions across bursting and non-bursting cells - chi square-test
+    [tblR2_1, chi2statR2_1, pvalR2_1] = chi2_vp(length([bursting30.cue.excitation' bursting30.cue.inhibition']),length(bursting_cells30),length([nonbursting30.cue.excitation' nonbursting30.cue.inhibition']),length(nonbursting_cells30));
+    [tblR2_2, chi2statR2_2, pvalR2_2] = chi2_vp(length([bursting30.reward.excitation' bursting30.reward.inhibition']),length(bursting_cells30),length([nonbursting30.reward.excitation' nonbursting30.reward.inhibition']),length(nonbursting_cells30));
+    [tblR2_3, chi2statR2_3, pvalR2_3] = chi2_vp(length([bursting30.punishment.excitation' bursting30.punishment.inhibition']),length(bursting_cells30),length([nonbursting30.punishment.excitation' nonbursting30.punishment.inhibition']),length(nonbursting_cells30));
+    
+    % Maxvalue statistics
+    resdir_avg_psth_R2_3 = fullfile(rootdir, '_analysis', 'R2', 'bursting_maxval30');
+    avg_psth_compare_maxval_VP(bursting30.cue.excitation,'cueresponse',nonbursting30.cue.excitation,'cueresponse','excitation',resdir_avg_psth_R2_3);
+    avg_psth_compare_maxval_VP(bursting30.reward.excitation,'rewardresponse',nonbursting30.reward.excitation,'rewardresponse','excitation',resdir_avg_psth_R2_3);
+    avg_psth_compare_maxval_VP(bursting30.punishment.excitation,'punishresponse',nonbursting30.punishment.excitation, 'punishresponse','excitation',resdir_avg_psth_R2_3);
+    
+    avg_psth_compare_maxval_VP(bursting30.cue.inhibition,'cueresponse',nonbursting30.cue.inhibition,'cueresponse','inhibition',resdir_avg_psth_R2_3);
+    avg_psth_compare_maxval_VP(bursting30.reward.inhibition,'rewardresponse',nonbursting30.reward.inhibition,'rewardresponse','inhibition',resdir_avg_psth_R2_3);
+    avg_psth_compare_maxval_VP(bursting30.punishment.inhibition,'punishresponse',nonbursting30.punishment.inhibition,'punishresponse','inhibition',resdir_avg_psth_R2_3);
+end
+
+if figR3spec % Spike shape analysis
+    if ~ismember('SpikeShape',listtag('prop')) % perform spike shape analysis if properties are not added to CellBase yet
+        resdirR3_1 = fullfile(getpref('cellbase', 'datapath'),'spikeshapeanalysis_newdata'); % saveresults here
+        vp_spikeshape_analysis(resdirR3_1);
+    end
+    
+    % Compare spike shape properties of electrophysiological groups - FIGR3 boxplots
+    compare_spikeshape([{bursting_cells} {nonbursting_cells}], [{'bursting'} {'nonbursting'}] ,fullfile(rootdir,'_analysis', 'R3', 'bursting_spikeanalysis'));
+    compare_spikeshape([{rhythmic_cells} {nonrhythmic_cells}], [{'rhythmic'}, {'nonrhythmic'}] ,fullfile(rootdir,'_analysis', 'R3', 'rhythmic_spikeanalysis'));
+    compare_spikeshape([{sync_cellids} {nonsync_cellids}], [{'synchronous'}, {'asynchronous'}] ,fullfile(rootdir,'_analysis', 'R3', 'sync_spikeanalysis'));
+    
+    resdirR3_2 = fullfile(rootdir, '_analysis', 'R3', 'avg_spikeshape'); % results directory
+    avg_spikeshape(bursting_cells, resdirR3_2, 'bursting'); % average waveform of bursting neurons
+    avg_spikeshape(nonbursting_cells, resdirR3_2, 'nonbursting'); % average waveform of non-bursting neurons
+    
+    avg_spikeshape(rhythmic_cells, resdirR3_2, 'rhythmic'); % average waveform of rhythmic neurons
+    avg_spikeshape(nonrhythmic_cells, resdirR3_2, 'nonrhythmic'); % average waveform of non-rhythmic neurons
+    
+    avg_spikeshape(sync_cellids, resdirR3_2, 'synchronous'); % average waveform of synchronous neurons
+    avg_spikeshape(nonsync_cellids, resdirR3_2, 'asynchronous'); % average waveform of asynchronous neurons
+end
+
+if figR4spec % Connection between bursting and firing rate - FIGR4.A-B
+    if ~ismember('baseline_FR',listtag('prop'))
+        resdirR4_1 = fullfile(rootdir, '_analysis', 'R4', 'baseline_FR');
+        extract_baselineFR(vpcells,'cue',resdirR4_1); % Calculate baseline firing rate and add it to CellBase
+    end
+    resdirR4_2 = fullfile(rootdir, '_analysis', 'R4', 'baseline_vs_burst');
+    baseline_vs_burst(vpcells, resdirR4_2); %FIGR4A-B
+end
+
+if figR5spec % Firing rate distribution of VP e-types
+    if ~ismember('baseline_FR',listtag('prop'))
+        resdirR4_1 = fullfile(rootdir, '_analysis', 'R4', 'baseline_FR');
+        extract_baselineFR(vpcells,'cue',resdirR4_1); % Calculate baseline firing rate and add it to CellBase
+    end
+    
+    BFR = getvalue('baseline_FR', vpcells); % Get baseline firing rate from The Matrix
+    
+    [~, b_cellinx, ~] = intersect(vpcells, bursting_cells); %FIGR5.A
+    [~, nb_cellinx, ~] = intersect(vpcells, nonbursting_cells);
+    boxstat(BFR(b_cellinx), BFR(nb_cellinx), 'bursting', 'nonbursting', 0.001)
+    set(gcf, 'renderer', 'painters')
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 'b_vs_nb.fig'));
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 'b_vs_nb.eps'));
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 'b_vs_nb.jpg'));
+    close(gcf)
+    
+    [~, r_cellinx, ~] = intersect(vpcells, rhythmic_cells); %FIGR5.B
+    [~, nr_cellinx, ~] = intersect(vpcells, nonrhythmic_cells);
+    boxstat(BFR(r_cellinx), BFR(nr_cellinx), 'rhythmic', 'non-rhythmic', 0.001)
+    set(gcf, 'renderer', 'painters')
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 'r_vs_nr.fig'));
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 'r_vs_nr.eps'));
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 'r_vs_nr.jpg'));
+    close(gcf)
+    
+    [~, s_cellinx, ~] = intersect(vpcells, sync_cellids); %FIGR5.C
+    [~, as_cellinx, ~] = intersect(vpcells, nonsync_cellids);
+    boxstat(BFR(s_cellinx), BFR(as_cellinx), 'synchronous', 'asynchronous', 0.001)
+    set(gcf, 'renderer', 'painters')
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 's_vs_as.fig'));
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 's_vs_as.eps'));
+    saveas(gcf, fullfile(rootdir, '_analysis', 'R3', 's_vs_as.jpg'));
+    close(gcf)
+end
+
+if figR8spec
+    choosecb('VP_tagged_CB')   % choose CellBase with tagged neurons
+    resdir_tagged = getpref('cellbase', 'datapath');
+    
+    response_resdir = fullfile(resdir_tagged,'vpresponsesorter');   % results directory
+    acgdir_tagged = fullfile(resdir_tagged,'acg_tagged');
+    tagged_vpcells = {'HDB25_180421a_2.1','HDB25_180420a_2.2','HDB26_180524a_4.3','HDB26_180524a_4.2',...
+        'HDB26_180524a_4.1','HDB26_180524a_1.1','HDB26_180524a_1.2'}; % cellid list of tagged VP cells
+    
+    vpacg(tagged_vpcells,acgdir_tagged,true); % autocorrelograms
+    
+    resdir_tagged_vp = fullfile(rootdir, 'R8', 'response_profiles');
+    for k = 1:length(tagged_vpcells)% PSTHs aligned to reward and punishment
+        G = figure;
+        pause(0.01)
+        viewcell2b(tagged_vpcells(k),'TriggerName','DeliverAllFeedback','SortEvent','TrialStart','sigma', 0.07,'eventtype','behav','ShowEvents',{{'StimulusOn'}},'Partitions','#Feedback','window',[-3 3])
+        maximize_figure(G)
+        
+        cellidt = tagged_vpcells{k};
+        cellidt(cellidt=='.') = '_';
+        fnm = fullfile(resdir_tagged_vp,[cellidt '_Feedback.jpg']);   % save
+        fnm2 = fullfile(resdir_tagged_vp,[cellidt '_Feedback.eps']);   % save
+        set(G, 'renderer', 'painters');
+        saveas(G,fnm)
+        saveas(G,fnm2)
+        close(G)
+    end
+    choosecb('VP_CellBase_B')
+end
+
+if figR10spec
+    resdirR10 = fullfile(rootdir, '_analysis', 'R10');
+    
+    if ~isfolder(resdirR10)
+        mkdir(resdirR10)
+    end
+    
+    VPsubarea = getvalue('SubArea', vpcells); %subarea information (VPm or VPl)
+    
+    % FIGR10.B-C - VP e-types in VPvm and VPl
+    vpmcells = vpcells(strcmp(VPsubarea, 'VPm')); % proportion of VPvm vs. VPl neurons
+    vplcells = vpcells(strcmp(VPsubarea, 'VPl'));
+    
+    % VPvm e-types
+    vpvm_b_cells = intersect(vpmcells, bursting_cells); % bursting VPvm cells
+    vpvm_nb_cells = intersect(vpmcells, nonbursting_cells); % non-bursting VPvm cells
+    vpvm_r_cells = intersect(vpmcells, rhythmic_cells); % rhythmic VPvm cells
+    vpvm_nr_cells = intersect(vpmcells, nonrhythmic_cells); % non-rhythmic VPvm cells
+    vpvm_s_cells = intersect(vpmcells, sync_cellids); % synchronous VPvm cells
+    vpvm_as_cells = intersect(vpmcells, nonsync_cellids); % asynchronous VPvm cells
+    
+    % VPl e-types
+    vpl_b_cells = intersect(vplcells, bursting_cells); % bursting VPl cells
+    vpl_nb_cells = intersect(vplcells, nonbursting_cells); % non-bursting VPl vells
+    vpl_r_cells = intersect(vplcells, rhythmic_cells); % rhythmic VPl cells
+    vpl_nr_cells = intersect(vplcells, nonrhythmic_cells); % non-rhythmic VPl cells
+    vpl_s_cells = intersect(vplcells, sync_cellids); % synchronous VPl cells
+    vpl_as_cells = intersect(vplcells, nonsync_cellids); % asynchronous VPl cells
+    
+    % chi-square statistics
+    [~,~,pval_r10_1] = chi2_vp(length(vpvm_b_cells),length([vpvm_b_cells vpvm_nb_cells]),length(vpl_b_cells),length([vpl_b_cells vpl_nb_cells]));
+    [~,~,pval_r10_2] = chi2_vp(length(vpvm_r_cells),length([vpvm_r_cells vpvm_nr_cells]),length(vpl_r_cells),length([vpl_r_cells, vpl_nr_cells]));
+    [~,~,pval_r10_3] = chi2_vp(length(vpvm_s_cells),length([vpvm_s_cells vpvm_as_cells]),length(vpl_s_cells),length([vpl_s_cells vpl_as_cells]));
+    
+    
+    % FIGR10.D - cue, reward and punishment response of bursting and non-bursting neurons of VPvm and VPl
+    vpvm_b_resp = getcellresp(vpvm_b_cells); % bursting VPvm cells
+    vpvm_nb_resp = getcellresp(vpvm_nb_cells); % non-bursting VPvm cells
+    vpl_b_resp = getcellresp(vpl_b_cells); % bursting VPl cells
+    vpl_nb_resp = getcellresp(vpl_nb_cells); % non-bursting VPl cells
+    
+    % Corresponding chi-square statistics
+    [~,~,pval_r10_4] = chi2_vp(length([vpvm_b_resp.cue.excitation' vpvm_b_resp.cue.inhibition']),length(vpvm_b_cells),length([vpvm_nb_resp.cue.excitation' vpvm_nb_resp.cue.inhibition']),length(vpvm_nb_cells));
+    [~,~,pval_r10_5] = chi2_vp(length([vpvm_b_resp.reward.excitation' vpvm_b_resp.reward.inhibition']),length(vpvm_b_cells),length([vpvm_nb_resp.reward.excitation' vpvm_nb_resp.reward.inhibition']),length(vpvm_nb_cells));
+    [~,~,pval_r10_6] = chi2_vp(length([vpvm_b_resp.punishment.excitation' vpvm_b_resp.punishment.inhibition']),length(vpvm_b_cells),length([vpvm_nb_resp.punishment.excitation' vpvm_nb_resp.punishment.inhibition']),length(vpvm_nb_cells));
+    
+    [~,~,pval_r10_7] = chi2_vp(length([vpl_b_resp.cue.excitation' vpl_b_resp.cue.inhibition']),length(vpl_b_cells),length([vpl_nb_resp.cue.excitation' vpl_nb_resp.cue.inhibition']),length(vpl_nb_cells));
+    [~,~,pval_r10_8] = chi2_vp(length([vpl_b_resp.reward.excitation' vpl_b_resp.reward.inhibition']),length(vpl_b_cells),length([vpl_nb_resp.reward.excitation' vpl_nb_resp.reward.inhibition']),length(vpl_nb_cells));
+    [~,~,pval_r10_9] = chi2_vp(length([vpl_b_resp.punishment.excitation' vpl_b_resp.punishment.inhibition']),length(vpl_b_cells),length([vpl_nb_resp.punishment.excitation' vpl_nb_resp.punishment.inhibition']),length(vpl_nb_cells));
+    
+    % FIGR10.E-G
+    % correlation of DV position with rhythmicity indices
+    DVpos = getvalue('DVPos', vpcells);
+    
+    [~, phasic_cellinx, ~] = intersect(vpcells, phasic_cells); % phasic cell indices
+    
+    regressionplot(BurstIndex, DVpos, 'BurstIndex', 'DVpos', 'regression_DVpos_BI', 'DVpos', resdirR10) % DV position correlation with burst index
+    regressionplot(BetaIndex', DVpos(phasic_cellinx), 'BetaIndex', 'DVpos', 'regression_DVpos_BetaI', 'DVpos', resdirR10) % DV position correlation with beta rhythmicity index
+    regressionplot(GammaIndex', DVpos(phasic_cellinx), 'GammaIndex', 'DVpos', 'regression_DVpos_GI', 'DVpos', resdirR10) % DV position correlation with gamma rhythmicity index
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
 % -------------------------------------------------------------------------
@@ -613,6 +897,7 @@ function responses = getcellresp(cellids)
 cueresp = getvalue('cueresponse',cellids);
 rewardresp = getvalue('rewardresponse',cellids);
 punishmentresp = getvalue('punishresponse',cellids);
+omissionresp = getvalue('omissionresponse',cellids);
 
 % Cue response
 cue_e = cellids(cueresp == 1);  % activated
@@ -629,6 +914,10 @@ pun_e = cellids(punishmentresp == 1);  % activated
 pun_i = cellids(punishmentresp == -1); % inhibited
 pun_n = cellids(punishmentresp == 0);  % non-responsive
 
+om_e = cellids(omissionresp == 1);
+om_i = cellids(omissionresp == -1);
+om_n = cellids(omissionresp == 0);
+
 % Output
 responses = struct;
 responses.cue.excitation = cue_e';
@@ -640,6 +929,9 @@ responses.reward.none = rew_n';
 responses.punishment.excitation = pun_e';
 responses.punishment.inhibition = pun_i';
 responses.punishment.none = pun_n';
+responses.omission.excitation = om_e';
+responses.omission.inhibition = om_i';
+responses.omission.none = om_n';
 end
 
 % -------------------------------------------------------------------------
@@ -660,4 +952,43 @@ for g = 1:length(animals)
     all_cells.(aID) = cells_per_animal;
     cells_overall.(aID) = getcellresp(cells_per_animal); % get cell responses for eact animal (FIGS1.C)
 end
+end
+
+% -------------------------------------------------------------------------
+function regressionplot(xdata, ydata, xtitle, ytitle, filenm, head, resdir)
+
+% Plotting scatter plots
+x = xdata;
+y = ydata;
+
+X = [ones(length(ydata),1) x];
+[b,bint,r,rint,stats] = regress(y,X);
+p = stats(3);
+pR = corrcoef(y,X(:,2));
+R = pR(3);
+[b,stats] = robustfit(x,y);
+
+% Regression plot
+figure
+scatter(x,y);
+xlabel(xtitle)
+ylabel(ytitle)
+title(head)
+% setmyplot_Balazs
+axis square
+icp = b(1);   % intercept
+gr = b(2);   % gradient
+xx = min(x):0.01:max(x);
+yy = xx .* gr + icp;
+hold on
+plot(xx,yy,'Color',[0.6627 0.6196 0.4039],'LineWidth',2)   % overlay regression line
+text('Units','normalized','Position',[0.7 0.7],...
+    'String',{['p = ' num2str(p)] ['R = ' num2str(R)]})
+set(gcf, 'renderer', 'painters')
+% savename = fullfile(resdir, [filenm '.fig']);
+savename2 = fullfile(resdir, [filenm '.eps']);
+savename3 = fullfile(resdir, [filenm '.jpg']);
+% saveas(gcf, savename)
+saveas(gcf, savename2)
+saveas(gcf, savename3)
 end
